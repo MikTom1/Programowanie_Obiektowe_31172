@@ -49,5 +49,67 @@ class Kot : Zwierze
     public void Miaucz() => Console.WriteLine("Miau Miau");
 }
 */
+// Zadanie 7 
+/*
+Pies pies = new Pies();
+Kot kot = new Kot();
+Krowa krowa = new Krowa();
 
+Zwierze[] Zwierzeta =
+{
+pies,kot,krowa
+};
 
+foreach (var v in Zwierzeta)
+{
+    v.DajGlos();
+}
+
+class Zwierze
+{
+    public virtual void DajGlos() => Console.WriteLine("Zwierzę wydaje dźwięk");
+}
+class Pies:Zwierze
+{
+    public override void DajGlos()
+    {
+        Console.WriteLine("Hau Hau");
+    }
+}
+class Kot:Zwierze
+{
+    public override void DajGlos()
+    {
+        Console.WriteLine("Miau");
+    }
+}
+class Krowa:Zwierze
+{
+    public override void DajGlos()
+    {
+        Console.WriteLine("Muu");
+    }
+}
+*/
+// Zadanie 8
+/*
+ElektrycznySamochod Tesla = new ElektrycznySamochod();
+Tesla.Start();
+Tesla.Jedz();
+Tesla.Laduj();
+
+class Pojazd
+{
+    public void Start() => Console.WriteLine("Pojazd uruchomiony");
+}
+
+class Samochod : Pojazd
+{
+    public void Jedz() => Console.WriteLine("Samochod jedzie");
+}
+
+class ElektrycznySamochod : Samochod
+{
+    public void Laduj() => Console.WriteLine("Ładowanie");
+}
+*/
