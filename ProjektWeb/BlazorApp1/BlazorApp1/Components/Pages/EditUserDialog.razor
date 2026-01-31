@@ -1,0 +1,93 @@
+﻿@using BlazorApp1.Components.Database
+@using BlazorApp1.Migrations
+@using BlazorApp1.Models
+@using MudBlazor
+
+@using BlazorApp1.Services
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+@inject UserService Usr
+@inject SportShopDb Db
+
+<MudContainer  Class="mt-12">
+    <MudPaper Elevation="12" Class="pa-6" Style="width:900px;height: 450px">
+
+        <MudForm @ref="form" Style="width: 800px;height: 300px;">
+            <MudTextField Label="Imie" 
+                          ShrinkLabel="true"
+                          @bind-Value="firstName"
+                          Required="true"
+                          Class="mb-3"
+                          RequiredError="Podaj Imie"/>
+            <MudTextField Label="Nazwisko" 
+                          ShrinkLabel="true"
+                          @bind-Value="lastName"
+                          Required="true"
+                          Class="mb-4"
+                          RequiredError="Podaj Nazwisko"/>
+            <MudTextField Label="Rola" 
+                          ShrinkLabel="true"
+                          @bind-Value="role"
+                          Required="true"
+                          Class="mb-4"
+                          RequiredError="Podaj Role"/>
+            <MudTextField Label="Login" 
+                          ShrinkLabel="true"
+                          @bind-Value="login"
+                          Required="true"
+                          Class="mb-4"
+                          RequiredError="Podaj Login"/>
+            <MudTextField Label="Haslo" 
+                          ShrinkLabel="true"
+                          @bind-Value="password"
+                          Required="true"
+                          Class="mb-4"
+                          RequiredError="Podaj Haslo"/>
+            
+        </MudForm> 
+    </MudPaper>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Style="width: 100px" OnClick="@(SaveChanges)"
+               ButtonType="ButtonType.Button">Zatwierdź</MudButton>
+    <MudButton Variant="Variant.Filled"Color="Color.Info" OnClick="@Cancel">
+        Anuluj
+    </MudButton>
+</MudContainer>
+@code {
+    [Parameter] 
+    public int userId { get; set; }
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+    private MudForm form;
+    private string firstName;
+    private string lastName;
+    private string role;
+    private string login;
+    private string password;
+
+    protected async override Task OnInitializedAsync()
+    {
+        var user = await Usr.ReturnUserIdAsync(userId);
+        firstName = user.FirstName;
+        lastName = user.LastName;
+        role = user.Role;
+        login = user.Login;
+        password = user.Password;
+    }
+
+    private async Task SaveChanges()
+    {
+        var _user = await Usr.ReturnUserIdAsync(userId);
+        _user.FirstName = firstName;
+        _user.LastName = lastName;
+        _user.Role = role;
+        _user.Login = login;
+        _user.Password = password;
+        await Db.SaveChangesAsync();
+        MudDialog.Close(DialogResult.Ok(_user)); 
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+}

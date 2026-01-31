@@ -1,0 +1,88 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using BlazorApp1.Components.Database
+@using MudBlazor
+@using BlazorApp1.Models
+@using BlazorApp1.Services
+@using Microsoft.EntityFrameworkCore.Metadata.Conventions
+@inject OrderService ord
+@inject OrderPositionService OrderPosition
+@inject SportShopDb Db
+
+<MudDialogContent>
+    <MudPaper Class="pa-3 mb-3">
+        <MudText Typo="Typo.h6">Szczegóły zamówienia: @currentorder.OrderId</MudText>
+
+        
+        <MudText>Imię: @currentorder.CustomerName   </MudText>
+        <MudText>Nazwisko: @currentorder.CustomerSurname   </MudText>
+        <MudText>Email: @currentorder.CustomerEmail   </MudText>
+        <MudText>Miasto: @currentorder.CustomerCity   </MudText>
+        <MudText>Kod Pocztowy: @currentorder.CustomerPostCode   </MudText>
+        <MudText>Telefon: @currentorder.CustomerPhoneNumber   </MudText>
+        <MudText>Kwota Brutto zamowienia: <b>@currentorder.Amount</b></MudText>
+        
+    </MudPaper>
+    <MudTable Items="@positions" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm">
+        <HeaderContent>
+            <MudTh>Id Zamowienia</MudTh>
+            <MudTh>Id Produktu</MudTh>
+            <MudTh>Ilosc</MudTh>
+            <MudTh>Cena netto jedn</MudTh>
+
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Towar">@context.OrderId</MudTd>
+            <MudTd DataLabel="Ilość">@context.ProductId</MudTd>
+            <MudTd DataLabel="Cena netto">@context.Quantity</MudTd>
+            <MudTd DataLabel="Netto">@context.PriceNet</MudTd>
+
+        </RowTemplate>
+
+
+    </MudTable>
+
+
+
+</MudDialogContent>
+
+<MudDialogActions>
+    <MudButton Variant="Variant.Text" OnClick="Cancel">Anuluj Zamowienie</MudButton>
+   
+</MudDialogActions>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public int OrderId { get; set; }
+
+    private bool _loading;
+    private List<OrderPosition> orderPos = new();
+    private List<Order> orders = new();
+    private List<OrderPosition> positions = new();
+    private Order currentorder = new();
+    protected override async Task OnInitializedAsync()
+    {
+        
+
+        _loading = true;
+        orders = await ord.GetOrderAsync();
+        orderPos = await OrderPosition.GetOrderAsync();
+       
+        currentorder = orders.FirstOrDefault(o => o.OrderId == OrderId);
+        positions = orderPos.Where(p => p.OrderId == OrderId).ToList();
+       
+        _loading = false;
+    }
+
+
+    async Task Cancel()
+    {
+        await ord.CancelOrderAsync(OrderId);
+        MudDialog.Close();
+    }
+
+    
+
+   
+
+ 
+}

@@ -1,0 +1,115 @@
+﻿@using MudBlazor
+@using BlazorApp1.Models
+@using BlazorApp1.Services
+@inject OrderService ord
+@inject ProductService Prod
+
+<MudDialogContent>
+    <MudText Typo="Typo.subtitle1">Dodaj pozycje do zamówienia: @OrderId</MudText>
+
+    <MudStack Spacing="2" Class="mt-2">
+        <MudButton Variant="Variant.Outlined" OnClick="AddRow" Disabled="@_loading">
+            + Dodaj wiersz
+        </MudButton>
+
+        @for (int i = 0; i < _rows.Count; i++)
+        {
+            var row = _rows[i];
+
+            <MudPaper Class="pa-2">
+                <MudGrid AlignItems="AlignItems.Center" Spacing="2">
+
+                    <MudItem xs="12" sm="7">
+                        <MudSelect T="int?" Label="Towar" Dense="true" Disabled="@_loading"
+                                   @bind-Value="row.ProductId">
+                            @foreach (var p in _products)
+                            {
+                                if (p.Quantity > 0)  @* tylko dostępne *@
+                                {
+                                    <MudSelectItem T="int?" Value="p.ProductID">
+                                        @p.ProductName (stan: @p.Quantity)
+                                    </MudSelectItem>
+                                }
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <MudItem xs="8" sm="4">
+                        <MudNumericField T="int"
+                                         Label="Ilość"
+                                         Dense="true"
+                                         Min="1"
+                                         Max="@GetMaxQty(row.ProductId)"
+                                         Immediate="true"
+                                         Disabled="@_loading"
+                                         @bind-Value="row.Qty" />
+
+                    </MudItem>
+
+                    <MudItem xs="4" sm="1" Class="d-flex justify-end">
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       OnClick="@(() => RemoveRow(row))" />
+                    </MudItem>
+
+                </MudGrid>
+            </MudPaper>
+        }
+    </MudStack>
+</MudDialogContent>
+
+<MudDialogActions>
+    <MudButton Variant="Variant.Text" OnClick="Cancel">Anuluj</MudButton>
+    <MudButton Variant="Variant.Filled" Disabled="@(!CanSave)" OnClick="Save">Zapisz</MudButton>
+</MudDialogActions>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public int OrderId { get; set; }
+
+    private bool _loading;
+    private List<Product> _products = new();
+    private List<Row> _rows = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        AddRow(); 
+
+        _loading = true;
+        _products = await Prod.GetProductsAsync();
+        _loading = false;
+    }
+
+    void AddRow() => _rows.Add(new Row());
+    void RemoveRow(Row row) => _rows.Remove(row);
+    void Cancel() => MudDialog.Cancel();
+
+    private bool CanSave => _rows.Any(r => r.ProductId.HasValue && r.Qty > 0);
+
+   
+
+    private async Task Save()
+    {
+       
+        var result = _rows
+            .Where(r => r.ProductId.HasValue && r.Qty > 0)
+            .GroupBy(r => r.ProductId!.Value)
+            .Select(g => new ProdData(g.Key, g.Sum(x => x.Qty)))
+            .ToList();
+        await ord.AddPositionAsync(OrderId,result);
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+
+    private class Row
+    {
+        public int? ProductId { get; set; }
+        public int Qty { get; set; } = 1;
+    }
+    private int GetMaxQty(int? productId)
+    {
+        if (!productId.HasValue) return 0;
+        var p = _products.FirstOrDefault(x => x.ProductID == productId.Value);
+        return p?.Quantity ?? 0;
+    }
+
+}

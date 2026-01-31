@@ -1,0 +1,130 @@
+﻿@rendermode InteractiveServer
+@using BlazorApp1.Models
+@using BlazorApp1.Services
+@using MudBlazor
+@inject ISnackbar Snackbar
+@inject OrderService OrderService
+
+<MudDialogContent>
+    <MudForm @ref="_form">
+        <MudGrid Spacing="2">
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_customerName"
+                              Label="Imię"
+                              Required="true"
+                              RequiredError="Imię jest wymagane"
+                              Dense="true" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_customerSurname"
+                              Label="Nazwisko"
+                              Required="true"
+                              RequiredError="Nazwisko jest wymagane"
+                              Dense="true" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_customerEmail"
+                              Label="Email"
+                              Required="true"
+                              RequiredError="Email jest wymagany"
+                              Validation="@(new Func<string, string?>(ValidateEmail))"
+                              Dense="true" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_customerPhone"
+                              Label="Telefon"
+                              Required="true"
+                              RequiredError="Telefon jest wymagany"
+                              Dense="true" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_customerCity"
+                              Label="Miasto"
+                              Required="true"
+                              RequiredError="Miasto jest wymagane"
+                              Dense="true" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_customerPostCode"
+                              Label="Kod pocztowy"
+                              Required="true"
+                              RequiredError="Kod pocztowy jest wymagany"
+                              Dense="true" />
+            </MudItem>
+        </MudGrid>
+    </MudForm>
+</MudDialogContent>
+
+<MudDialogActions>
+    <MudButton Variant="Variant.Text" OnClick="Cancel">Anuluj</MudButton>
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               Disabled="_saving"
+               OnClick="Save">
+         Dalej
+    </MudButton>
+</MudDialogActions>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    private MudForm? _form;
+    private bool _saving;
+
+    private string _customerName = "";
+    private string _customerSurname = "";
+    private string _customerEmail = "";
+    private string _customerPhone = "";
+    private string _customerCity = "";
+    private string _customerPostCode = "";
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Save()
+    {
+        if (_form is null) return;
+
+        await _form.Validate();
+        if (!_form.IsValid)
+        {
+            Snackbar.Add("Uzupełnij poprawnie wszystkie pola.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            _saving = true;
+
+            // TU: Tworzysz zamówienie (bez pozycji) i dostajesz OrderId.
+            // Dopasuj nazwę metody i parametry do swojego OrderService.
+            var neworder = await OrderService.CreateOrderAsync(
+                _customerName,
+                _customerSurname,
+                _customerEmail,
+                _customerPhone,
+                _customerCity,
+                _customerPostCode
+            );
+
+            MudDialog.Close(DialogResult.Ok(neworder));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Błąd tworzenia zamówienia: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private string ValidateEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return "Email jest wymagany";
+        return email.Contains("@") ? null : "Nieprawidłowy email";
+    }
+}

@@ -1,0 +1,101 @@
+﻿@using BlazorApp1.Components.Database
+@using BlazorApp1.Migrations
+@using BlazorApp1.Models
+@using MudBlazor
+
+@using BlazorApp1.Services
+@using Microsoft.AspNetCore.Mvc.Diagnostics
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+@inject ProductService Prod
+@inject SportShopDb Db
+
+<MudDialogContent>
+
+    @for (int i = 0; i < _rows.Count; i++)
+    {
+        var row = _rows[i];
+
+        <MudPaper Class="pa-2 mb-2">
+            <MudGrid Spacing="2" AlignItems="AlignItems.Center">
+
+                <MudItem xs="12" sm="7">
+                    <MudText Typo="Typo.body1">@row.ProductName</MudText>
+                    <MudText Typo="Typo.caption">ID: @row.ProductId</MudText>
+                </MudItem>
+
+                <MudItem xs="12" sm="5">
+                    <MudNumericField T="int"
+                                     Label="Nowy stan"
+                                     Min="0"
+                                     Dense="true"
+                                     Immediate="true"
+                                     @bind-Value="row.Qty" />
+                </MudItem>
+
+            </MudGrid>
+        </MudPaper>
+    }
+</MudDialogContent>
+
+
+
+<MudDialogActions>
+    <MudButton Variant="Variant.Text" OnClick="Cancel">Anuluj</MudButton>
+    <MudButton Variant="Variant.Filled" Disabled="@(!CanSave)" OnClick="Save">Zapisz</MudButton>
+</MudDialogActions>
+
+
+
+
+
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    void Cancel() => MudDialog.Cancel();
+   
+    [Parameter]
+    public HashSet<Product> selected { get; set; } = new();
+    
+    private bool _loading;
+    private List<Product> products = new();
+    private List<Row> _rows = new();
+    
+    bool CanSave => _rows.Any(r => r.ProductId.HasValue && r.Qty >= 0);
+    protected override async Task OnInitializedAsync()
+    {
+       
+        foreach (var v in selected)
+        {
+            Row newRow = new Row(v.ProductID, v.Quantity,v.ProductName);
+            _rows.Add(newRow);
+        }
+        
+    }
+    
+    private class Row
+    {
+        public int? ProductId { get; set; }
+        public int Qty { get; set; }
+        public string ProductName { get; set; }
+        public Row(int id, int qty,string productName)
+        {
+            ProductId = id;
+            Qty = qty;
+            ProductName = productName;
+        }
+    }
+    
+    
+    private void RemoveRow(Row row) => _rows.Remove(row);
+    
+    private async Task Save()
+    {
+        var result = _rows
+            .Where(r => r.ProductId.HasValue && r.Qty >= 0)
+            .Select(r => new ProdData(r.ProductId.Value, r.Qty))
+            .ToList();
+        await Prod.EditQuantityAsync(result);
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+}

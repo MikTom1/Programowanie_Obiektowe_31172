@@ -1,0 +1,112 @@
+﻿@page "/Orders"
+@rendermode InteractiveServer
+@using BlazorApp1.Models
+@using BlazorApp1.Services
+@inject OrderService ord
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+<h3>Zamówienia</h3>
+
+<MudTable Items="@orders" MultiSelection="true" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Info">
+    <HeaderContent>
+        <MudTh>OrderID</MudTh>
+        <MudTh>Imie</MudTh>
+        <MudTh>Nazwisko</MudTh>
+        <MudTh>Kwota Brutto Zamówienia</MudTh>
+        <MudTh>Data</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="OrderID">@context.OrderId</MudTd>
+        <MudTd DataLabel="Imie">@context.CustomerName</MudTd>
+        <MudTd DataLabel="Nazwisko">@context.CustomerSurname</MudTd>
+        <MudTd DataLabel="Kwota">@context.Amount</MudTd>
+        <MudTd DataLabel="Data">@context.OrderDate</MudTd>
+        <MudTd Align="Align.Right">
+            <MudIconButton Icon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary"
+                           ButtonType="ButtonType.Button"
+                           StopPropagation="true"
+                           OnClick="@(async () => await OpenAddPositions(context.OrderId))" />
+            <MudIconButton Icon="@Icons.Material.Filled.Info"
+                           Color="Color.Primary"
+                           ButtonType="ButtonType.Button"
+                           StopPropagation="true"
+                           OnClick="@(async () => await OpenDetails(context.OrderId))" />
+
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@open">Dodaj Zamowienie</MudButton>
+
+
+
+
+
+@code {
+    bool _loading;
+    private List<Order> orders;
+    protected override async Task OnInitializedAsync()
+    {
+       _loading = true;
+       orders= await ord.GetOrderAsync();
+       _loading = false;
+    }
+
+    private async Task open()
+    {
+        var option = new MudBlazor.DialogOptions()
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true
+        };
+        var dialog = await DialogService.ShowAsync<AddOrderDialog>("Dodaj zamowienie", option);
+        var result = await dialog.Result;
+        if (result.Canceled) return;
+
+        orders = await ord.GetOrderAsync();
+        
+        StateHasChanged();
+    }
+    private async Task OpenAddPositions(int orderId)
+    {
+        var option = new MudBlazor.DialogOptions()
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true
+        };
+        var par = new DialogParameters()
+        {
+            ["OrderId"] = orderId
+        };
+        var dialog = await DialogService.ShowAsync<AddOrderPositionsDialog>("Dodaj zamowienie",par, option);
+        var result = await dialog.Result;
+        if (result.Canceled) return;
+
+        orders = await ord.GetOrderAsync();
+        
+        StateHasChanged();
+    }
+    private async Task OpenDetails(int orderId)
+    {
+        var option = new MudBlazor.DialogOptions()
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true
+        };
+        var par = new DialogParameters()
+        {
+            ["OrderId"] = orderId
+        };
+        var dialog = await DialogService.ShowAsync<OrderDetailsDialog>("Dodaj zamowienie",par, option);
+        var result = await dialog.Result;
+        if (result.Canceled) return;
+
+        orders = await ord.GetOrderAsync();
+        
+        StateHasChanged();
+    }
+   
+}

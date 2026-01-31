@@ -1,0 +1,131 @@
+﻿@page "/Users"
+@using BlazorApp1.Components.Database
+@using BlazorApp1.Services
+@using BlazorApp1.Models
+@rendermode InteractiveServer
+@inject SportShopDb Db
+@inject NavigationManager Nav
+@inject AuthService Auth
+@inject UserService Usr
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<h3>Użytkownicy</h3>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate />
+}
+else
+{
+    @foreach (var v in users)
+    {
+        <MudPaper Class="pa-3 mb-2">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudCheckBox T="bool"
+                             Value="@selectedIds.Contains(v.UserId)"
+                             ValueChanged="@( (bool val) => ToggleSelected(v.UserId, val) )" />
+
+
+                <MudText Typo="Typo.subtitle1">@v.FirstName @v.LastName</MudText>
+            </MudStack>
+            <MudText Typo="Typo.body2">
+                Rola:  @v.Role | Login:  @v.Login | Haslo:  @v.Password
+
+            </MudText>
+
+        </MudPaper>
+    }
+}
+
+<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@open">Dodaj użytkownika</MudButton>
+<MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@delete">Usuń użytkownika</MudButton>
+<MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@openedit">Edytuj użytkownika</MudButton>
+@code {
+    private HashSet<int> selectedIds = new();
+    List<User> users = new();
+    private bool _loading;
+    
+    private void ToggleSelected(int id, bool isChecked)
+    {
+        if (isChecked) selectedIds.Add(id);
+        else selectedIds.Remove(id);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        users = await Usr.GetUsersAsync();
+        _loading = false;
+    }
+
+    public void Task()
+    {
+        Nav.NavigateTo("/");
+    }
+
+    private async Task open()
+    {
+        var option = new MudBlazor.DialogOptions()
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Medium, 
+            FullWidth = true
+        };
+        var dialog = await DialogService.ShowAsync<AddUserDialog>("Dodaj użytkownika",option);
+        var result = await dialog.Result;
+        if (result.Canceled) return;
+        
+        users = await Usr.GetUsersAsync();
+        StateHasChanged();
+        
+
+
+    }
+
+    private async Task delete()
+    {
+        if (selectedIds.Count==0)
+        {
+            Snackbar.Add("Nie wybrano użytkownika", Severity.Info);
+        }
+        else
+        {
+            Snackbar.Add("Usunięto użytkowników",Severity.Success);
+            await Usr.DeleteUserAsync(selectedIds);
+            users = await Usr.GetUsersAsync();
+            StateHasChanged();
+        }
+        
+        
+    }
+    
+    private async Task openedit()
+    {  if (selectedIds.Count<=0 || selectedIds.Count>1)
+        {
+            Snackbar.Add("Wybierz 1 użytkownika", Severity.Error);
+        }
+        else
+        {
+            var id = selectedIds.First();
+            var parameters = new DialogParameters()
+            {
+                ["UserId"] = id
+            };
+        var option = new MudBlazor.DialogOptions()
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Medium, 
+            FullWidth = true
+        };
+        var dialog = await DialogService.ShowAsync<EditUserDialog>("Edytuj użytkownika",parameters,option);
+        var result = await dialog.Result;
+        if (result.Canceled) return;
+        
+        users = await Usr.GetUsersAsync();
+        StateHasChanged();
+        }
+
+
+    }
+}

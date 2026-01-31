@@ -1,0 +1,77 @@
+﻿@using BlazorApp1.Migrations
+@using MudBlazor
+
+@using BlazorApp1.Services
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+@inject UserService Usr
+
+
+<MudContainer  Class="mt-12">
+    <MudPaper Elevation="12" Class="pa-6" Style="width:900px;height: 450px">
+        
+    
+        <MudForm @ref="form" Style="width: 800px;height: 300px;">
+            <MudTextField Label="Imie" 
+                          ShrinkLabel="true"
+                          @bind-Value="firstName"
+                          Required="true"
+                          Class="mb-3"
+                          RequiredError="Podaj Imie"/>
+            <MudTextField Label="Nazwisko" 
+                          ShrinkLabel="true"
+                          @bind-Value="lastName"
+                          Required="true"
+                          Class="mb-4"
+                          RequiredError="Podaj Nazwisko"/>
+            <MudTextField Label="Rola" 
+                          ShrinkLabel="true"
+                          @bind-Value="role"
+                          Required="true"
+                          Class="mb-4"
+                          RequiredError="Podaj Role"/>
+            <MudTextField Label="Login" 
+                          ShrinkLabel="true"
+                          @bind-Value="login"
+                          Required="true"
+                          Class="mb-4"
+                          RequiredError="Podaj Login"/>
+            <MudTextField Label="Haslo" 
+                          ShrinkLabel="true"
+                          @bind-Value="password"
+                          Required="true"
+                          Class="mb-4"
+                          RequiredError="Podaj Haslo"/>
+            
+        </MudForm> 
+        
+    </MudPaper>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Style="width: 100px" OnClick="@(AddUser)"
+               ButtonType="ButtonType.Button">Dodaj</MudButton>
+    
+</MudContainer>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+    private MudForm form;
+    private string firstName;
+    private string lastName;
+    private string role;
+    private string login;
+    private string password;
+
+    private async Task AddUser()
+    {
+        var newUser = await Usr.AddUserAsync(firstName, lastName, role, login, password);
+        if (newUser == null)
+        {
+            Snackbar.Add("Blad dodania uzytkownika", Severity.Error);
+        }
+        else
+        {
+            Snackbar.Add("Dodano uzytkownika", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(newUser));
+        }
+    }
+}

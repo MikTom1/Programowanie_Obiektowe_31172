@@ -1,0 +1,118 @@
+﻿@page "/Products"
+@using BlazorApp1.Components.Database
+@using BlazorApp1.Migrations
+@using BlazorApp1.Services
+@using BlazorApp1.Models
+@rendermode InteractiveServer
+@inject SportShopDb Db
+@inject NavigationManager Nav
+@inject AuthService Auth
+@inject ProductService Prod
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<h3>Produkty</h3>
+<MudTable Items="@products" @bind-SelectedItems="selected" MultiSelection="true" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Info">
+    <HeaderContent>
+        <MudTh>ID</MudTh>
+        <MudTh>Nazwa Produktu</MudTh>
+        <MudTh>Cena netto</MudTh>
+        <MudTh>Kategoria</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Id">@context.ProductID</MudTd>
+        <MudTd DataLabel="Nazwa">@context.ProductName</MudTd>
+        <MudTd DataLabel="Cena">@context.PriceNet</MudTd>
+        <MudTd DataLabel="Kategoria">@context.Category</MudTd>
+    </RowTemplate>
+</MudTable>
+<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@open">Dodaj produkt</MudButton>
+<MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@delete">Usuń produkty</MudButton>
+<MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@openedit">Edytuj produkt</MudButton>
+
+@code {
+    private HashSet<Product> selected;
+    private HashSet<int> selectedProdIds => selected.Select(u => u.ProductID).ToHashSet();
+    List<Product> products = new();
+    private bool _loading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        products = await Prod.GetProductsAsync();
+        _loading = false;
+    }
+
+    private async Task open()
+    {
+        var option = new MudBlazor.DialogOptions()
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true
+        };
+        var dialog = await DialogService.ShowAsync<AddProductDialog>("Dodaj Produkt", option);
+        var result = await dialog.Result;
+        if (result.Canceled) return;
+
+        products = await Prod.GetProductsAsync();
+        
+        StateHasChanged();
+
+    }
+
+    private async Task delete()
+    {
+        if (selectedProdIds.Count == 0)
+        {
+            Snackbar.Add("Nie wybrano produktu", Severity.Info);
+        }
+        else
+        {
+           
+            await Prod.DeleteProductAsync(selectedProdIds);
+            if (await Prod.DeleteProductAsync(selectedProdIds) == true)
+            {
+                Snackbar.Add("Usunięto produkty", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Blad usuwania, sprawdz czy towar nie jest dostepny na stanie", Severity.Error);
+            }
+            products = await Prod.GetProductsAsync();
+            
+            StateHasChanged();
+        }
+    }
+
+    private async Task openedit()
+    {
+        if (selected==null || selected.Count != 1 )
+        {
+            Snackbar.Add("Wybierz 1 użytkownika", Severity.Error);
+        }
+        else
+        {
+            var id = selectedProdIds.First();
+            var parameters = new DialogParameters()
+            {
+                ["ProductId"] = id
+            };
+            var option = new MudBlazor.DialogOptions()
+            {
+                CloseButton = true,
+                MaxWidth = MaxWidth.Medium,
+                FullWidth = true
+            };
+            var dialog = await DialogService.ShowAsync<EditProductDialog>("Edytuj produkt", parameters, option);
+            var result = await dialog.Result;
+            if (result.Canceled) return;
+
+            products = await Prod.GetProductsAsync();
+            selected = null;
+            StateHasChanged();
+        }
+    }
+
+}
+

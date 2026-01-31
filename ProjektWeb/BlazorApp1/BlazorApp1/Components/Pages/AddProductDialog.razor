@@ -1,0 +1,64 @@
+﻿@using BlazorApp1.Migrations
+@using MudBlazor
+@using BlazorApp1.Services
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+@inject ProductService Prod
+<MudContainer  Class="mt-12">
+    <MudPaper Elevation="12" Class="pa-6" Style="width:900px;height: 450px">
+        
+    
+        <MudForm @ref="form" Style="width: 800px;height: 300px;">
+            <MudTextField Label="Nazwa" 
+                          ShrinkLabel="true"
+                          @bind-Value="productName"
+                          Required="true"
+                          Class="mb-3"
+                          RequiredError="Podaj nazwe produktu"/>
+            <MudNumericField T="decimal"
+                          Label="Cena Netto" 
+                          ShrinkLabel="true"
+                          @bind-Value="price"
+                          Class="mb-4"
+                          Min="0"
+                          Step="0.01m"
+                          RequiredError="Podaj Cene netto /0.0"/>
+            <MudTextField Label="Kategoria" 
+                          ShrinkLabel="true"
+                          @bind-Value="category"
+                          Required="true"
+                          Class="mb-4"
+                          RequiredError="Podaj kategorie"/>
+            
+        </MudForm> 
+        
+    </MudPaper>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Style="width: 100px" OnClick="@(AddProduct)"
+               ButtonType="ButtonType.Button">Dodaj</MudButton>
+    
+</MudContainer>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+    private MudForm form;
+    private string productName;
+    private decimal price;
+    private string category;
+
+    public async Task AddProduct()
+    {
+        var newProduct = await Prod.AddProductAsync(productName, price, category);
+        if (newProduct == null)
+        {
+            Snackbar.Add("Blad dodania produktu");
+        }
+        else
+        {
+            Snackbar.Add("Dodano produkt", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(newProduct));
+        }
+    }
+    
+    
+}

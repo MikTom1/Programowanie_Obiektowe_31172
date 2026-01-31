@@ -1,0 +1,88 @@
+﻿@page "/Stock"
+
+@using BlazorApp1.Components.Database
+@using BlazorApp1.Services
+@using BlazorApp1.Models
+@rendermode InteractiveServer
+@inject SportShopDb Db
+@inject NavigationManager Nav
+@inject AuthService Auth
+@inject ProductService Prod
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<h3>Magazyn</h3>
+<MudTable Items="@products" @bind-SelectedItems="selected" MultiSelection="true" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Info">
+    <HeaderContent>
+        
+        <MudTh>Produkt</MudTh>
+        <MudTh>Cena Netto</MudTh>
+        <MudTh>Ilość</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        
+        <MudTd DataLabel="Nazwa">@context.ProductName</MudTd>
+        <MudTd DataLabel="Cena">@context.PriceNet</MudTd>
+        <MudTd DataLabel="Name">@context.Quantity</MudTd>
+    </RowTemplate>
+</MudTable>
+<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@openAdd">Przyjmij Towar</MudButton>
+<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@openEditQ">Wyrównaj stan</MudButton>
+@code
+{
+    private bool _loading;
+    private List<Product> products = new();
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        products = await Prod.GetProductsAsync();
+        _loading = false;
+    }
+    private HashSet<Product> selected;
+    HashSet<int> changeQuantity => selected.Select(u => u.ProductID).ToHashSet();
+    private async Task openAdd()
+    {
+        var option = new MudBlazor.DialogOptions()
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true
+        };
+        var dialog = await DialogService.ShowAsync<AddQuantityDialog>("Przyjmij towar", option);
+        var result = await dialog.Result;
+        if (result.Canceled) return;
+
+        products = await Prod.GetProductsAsync();
+        StateHasChanged();
+    }
+    private async Task openEditQ()
+    {   
+        if  (selected is null || selected.Count == 0)
+        {
+            Snackbar.Add("Nie zaznaczono produktu", Severity.Error);
+            return ;
+        }
+        else
+        {
+            
+        
+        var option = new MudBlazor.DialogOptions()
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true
+        };
+        var parameters = new DialogParameters()
+        {
+            ["selected"] = selected
+        };
+        var dialog = await DialogService.ShowAsync<EditQuantityDialog>("Edytuj ilość",parameters, option);
+        var result = await dialog.Result;
+        if (result.Canceled) return;
+
+        products = await Prod.GetProductsAsync();
+        selected = null;
+        StateHasChanged();
+        }
+    }
+}
